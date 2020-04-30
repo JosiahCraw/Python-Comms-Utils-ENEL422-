@@ -1,4 +1,4 @@
-from comms_utils import encode, decode
+from .Python Comms Utils.comms_utils import encode, decode
 
 if __name__ == "__main__":
     pam_levels = 8
