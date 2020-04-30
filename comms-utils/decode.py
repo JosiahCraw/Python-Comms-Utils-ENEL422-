@@ -1,5 +1,4 @@
 import numpy as np
-from .encode import encode_pam
 from typing import List
 
 def decode_pam(incoming_data: List[int], levels: int):
@@ -10,7 +9,10 @@ def decode_pam(incoming_data: List[int], levels: int):
     message = ''.join(char for char in [chr(int(bit_str[i:i+8], 2)) for i in range(0, len(bit_str), 8)])
     return message
 
+def decode_pam_file(incoming_data: List[int], file_name: str, levels: int):
+    decoded_data = decode_pam(incoming_data, levels)
+    with open(file_name, 'w+') as output:
+        output.writelines(decoded_data)
 
 if __name__ == "__main__":
-    test_list = encode_pam("get out now", 16)
-    print(decode_pam(test_list, 16))
+    print(decode_pam([], 16))
