@@ -6,7 +6,7 @@ def decode_pam(incoming_data: List[int], levels: int):
     bit_str = ""
     for level_val in incoming_data[::-1]:
         bit_str = bit_str + bin(level_val)[2:].zfill(levels)
-    message = ''.join(char for char in [chr(int(bit_str[i:i+8], 2)) for i in range(0, len(bit_str), 8)])
+    message = ''.join(char for char in [chr(int(bit_str[i:i+7], 2)) for i in range(0, len(bit_str), 7)])
     return message
 
 def decode_pam_file(incoming_data: List[int], file_name: str, levels: int):

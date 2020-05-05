@@ -1,4 +1,4 @@
- import numpy as np
+import numpy as np
 import sympy as sp
 from typing import List
 
@@ -12,8 +12,7 @@ def sum_ak(ak: List[int], n: int):
     return sum
 
 def rn(n: int, ak: List[int], pam_levels: int):
-    N = sp.Symbol("N")
-    rn = sp.limit((1/N)*sum_ak(ak, n), N, np.Infinity)
+    (1/n)*sum_ak(ak, n)
     return rn
 
 if __name__ == "__main__":
