@@ -1,4 +1,4 @@
 #!/bin/bash
 sudo python setup.py install --record files.txt
 cat files.txt | sudo xargs rm -rf
-# rm -f files.txt
+rm -f files.txt
