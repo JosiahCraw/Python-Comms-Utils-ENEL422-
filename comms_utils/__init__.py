@@ -1,6 +1,6 @@
-import ak
-import decode
-import encode
-import psd
-import pulse
-import rn
+from ak import *
+from decode import *
+from encode import *
+from psd import *
+from pulse import *
+from rn import *
