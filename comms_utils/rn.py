@@ -1,7 +1,7 @@
 import numpy as np
 import sympy as sp
 from typing import List
-import ak
+import comms_utils.ak as ak
 
 class RN():
     def __init__(self, ak):

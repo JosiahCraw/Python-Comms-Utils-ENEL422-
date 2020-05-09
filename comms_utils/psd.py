@@ -1,8 +1,8 @@
 import numpy as np
 import sympy as sp
-import ak
-import rn
-import pulse
+import comms_utils.ak as ak
+import comms_utils.rn as rn
+import comms_utils.pulse as pulse
 from typing import List, Callable
 
 class SX():
@@ -11,15 +11,15 @@ class SX():
         self.ak = ak
         self.n = ak.length[0]
         self.rn = rn.RN(ak)
+        self.rn_values = [self.rn[n] for n in range(1, self.n)]
 
     def cos_f(self, f: float) -> List[float]:
-        return [float(np.cos(n*2*np.pi*f*self.tb)) for n in range(1, self.n)]
+        return [float(np.cos(n*4*np.pi*f*self.tb)) for n in range(1, self.n)]
 
     def get_sum(self, f: float):
-        rn_values = [self.rn[n] for n in range(1, self.n)]
         cos_values = self.cos_f(f)
 
-        values = [rn_values[i] * cos_values[i] for i in range(0, self.n-1)]
+        values = [self.rn_values[i] * cos_values[i] for i in range(0, self.n-1)]
         return sum(values)
 
     def __getitem__(self, key):
