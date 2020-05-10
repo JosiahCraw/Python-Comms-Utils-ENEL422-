@@ -7,17 +7,19 @@ from comms_utils.pulse import Pulse
 np.random.seed(int(time()))
 
 class AK():
-    def __init__(self, levels: int=4, n: int=100, data: List[float]=None):
+    def __init__(self, levels: int=4, n: int=100, data: List[float]=None, oversample_amount: int=1):
         if data == None:
             data = np.random.randint(0, levels, (1, n))[0]
             data = [i-(levels-1-i) for i in data]
         self.data = data
-        self.length = int(len(data)),
+        self.length = int(len(data))
         self.levels = levels
-        self.oversample_amount = 1
+        self.original_data = data
+        self.oversample_amount = oversample_amount
         self.max_signal = ((levels/2)+1)
         self.min_signal = -((levels/2)+1)
-        self.noise = [(num*2)-1 for num in np.random.random_sample((1, self.length[0]))[0]]
+        self.noise_db = None
+        self.noise = [(num*2)-1 for num in np.random.random_sample((1, self.length))[0]]
 
     def load_data(self, data: List[int], levels: int=4):
         self.data = data
@@ -26,6 +28,17 @@ class AK():
         self.max_signal = ((levels/2)+1)
         self.min_signal = -((levels/2)+1)
         self.noise = [(num*2)-1 for num in np.random.random_sample((1, self.length[0]))[0]]
+
+    def new_data(self, gen_noise: bool=True):
+        data = np.random.randint(0, self.levels, (1, self.length))[0]
+        data = [i-(self.levels-1-i) for i in data]
+        self.data = data
+        self.length = int(len(data))
+        if(gen_noise == True):
+            self.regen_noise()
+
+    def get_data(self) -> List[float]:
+        return self.data
 
     def shift_left(self, n: int):
         data = self.data
@@ -57,12 +70,16 @@ class AK():
         self.oversample_amount = n
         self.noise = [(num*2)-1 for num in np.random.random_sample((1, self.length))[0]]
 
-    def add_noise(self, snr_db: int):
+    def add_noise(self, snr_db: float):
         noise_power = self.max_signal / (10**(snr_db/10))
         data_noise = list()
         for i in range(0, len(self.data)):
             data_noise.append(self.data[i]+noise_power*self.noise[i])
         self.data = data_noise
+        self.noise_db = snr_db
+
+    def get_snr_db(self) -> float:
+        return self.noise_db
 
     def regen_noise(self):
         self.noise = [(num*2)-1 for num in np.random.random_sample((1, self.length[0]))[0]]
@@ -76,7 +93,7 @@ class AK():
             for pulse_point in np.arange(0, pulse.get_period(), pulse.get_period()/samples):
                 convolved_sig.append(pulse[float(pulse_point)] * data_point)
             # convolved_sig.append(sample)
-        return AK(data=convolved_sig)
+        return AK(data=convolved_sig, oversample_amount=samples)
         
     def __len__(self) -> int:
         if type(self.length) == tuple:
