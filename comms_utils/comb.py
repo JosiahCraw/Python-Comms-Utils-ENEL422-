@@ -43,7 +43,6 @@ class Comb():
         return self.time[index]
 
     def pulse_shape(self, pulse: Pulse, plot_pre_sum: bool=False):
-        # pulse_samples = int(self.samples * (pulse.get_period() / self.ts))
         output = np.array([0 for _ in range(self.length*2)], dtype=float)
         pulse = np.array([pulse[t-pulse.get_peak_delay()*self.time[-1]] for t in self.time], dtype=float)
         

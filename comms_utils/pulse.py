@@ -53,6 +53,8 @@ class Rect(Pulse):
     def __init__(self, period: float):
         super().__init__(period)
         self.peak_delay = 1/2
+        self.max_pulses = 1
+        
 
     def time_domain(self, t: float) -> float:
         if self.max_pulses != -1:

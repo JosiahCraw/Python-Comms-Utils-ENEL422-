@@ -6,17 +6,20 @@ if __name__ == "__main__":
     bandwidth = 1
     tb = 1/bandwidth
     ts = tb*2
-    rect = comms_utils.pulse.Niquist(ts, 1)
-    rect.set_max_pulses(10)
-    message_length = 5000
+    rect = comms_utils.pulse.Rect(ts)
+    # rect.set_max_pulses(10)
+    message = '0010110111'
+    message_data = comms_utils.encode.bin_to_pam(message, 4)
+    print(message_data)
+    message_length = 10000
     oversampling_factor = 8
-    ak = comms_utils.ak.AK(n=message_length, levels=2)
+    ak = comms_utils.ak.AK(data=message_data, levels=4)
         
     comb = comms_utils.comb.Comb(ak, ts, oversampling_factor)
     signal = comb.pulse_shape(rect, plot_pre_sum=False)
-    signal.add_noise(10)
+    signal.add_noise(20)
     # signal.plot()
-    comms_utils.plot.eye_diagram(signal, rect, comb.get_clock_comb())
+    comms_utils.plot.eye_diagram(signal, rect, comb.get_clock_comb(), num_periods=2)
     # signal.add_noise(2)
     # signal.plot()
     sig_data, sig_time = signal.get_data()
@@ -37,5 +40,5 @@ if __name__ == "__main__":
     comb_data = rect.apply_conv_delay(len(sig_data), comb.get_clock_comb())
     plot2 = plt.plot(sig_time, true_data, '--r')
     pulse_plot = plt.plot(sig_time, sig_data, '-b')
-    # print(comms_utils.decode.decode_pam(signal*comb_data, ak.get_levels()))
+    print(comms_utils.decode.decode_pam(signal*comb_data, ak.get_levels()))
     plt.show()
