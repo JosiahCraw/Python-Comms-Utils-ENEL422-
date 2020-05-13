@@ -2,3 +2,4 @@ comms_utils/__pycache__/
 dist/
 build/
 *.egg-info/
+.vscode/

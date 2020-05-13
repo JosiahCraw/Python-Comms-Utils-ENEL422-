@@ -2,12 +2,19 @@ import numpy as np
 from typing import List
 
 def decode_pam(incoming_data: List[float], levels: int):
+    max_val = (levels-1)
+    sampled_data = list()
+    for data in incoming_data:
+        if data != 0:
+            sampled_data.append(data)
     level_options = [i-(levels-1-i) for i in range(0, levels)]
     levels = int(np.log2(levels))
     bit_str = ""
-    for level_val in incoming_data[::-1]:
+    for level_val in sampled_data[::-1]:
         level_val = min(level_options, key=lambda x:abs(x-level_val))
-        bit_str = bit_str + bin(round(level_val))[2:].zfill(levels)
+        level_val = level_val + max_val
+        level_val = int(level_val / 2)
+        bit_str = bit_str + bin(level_val)[2:].zfill(levels)
     message = ''.join(char for char in [chr(int(bit_str[i:i+7], 2)) for i in range(0, len(bit_str), 7)])
     return message
 

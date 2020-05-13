@@ -11,6 +11,7 @@ def eye_diagram(ak: AK, pulse: Pulse, samples: int, snr_db: float=None):
         conv_data = ak_data.convolve(pulse, samples)
         if snr_db != None:
             conv_data.add_noise(snr_db)
+        pulse_peak_delay = int(samples*pulse.get_peak_delay())
         y = conv_data[int(samples/3):int(samples*3)-int(samples/3)]
         x = list(range(len(y)))
         plt.plot(x, y, '-b')
