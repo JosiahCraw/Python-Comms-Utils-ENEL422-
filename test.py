@@ -6,12 +6,11 @@ if __name__ == "__main__":
     bandwidth = 1
     tb = 1/bandwidth
     ts = tb*2
-    print(ts)
     rect = comms_utils.pulse.Niquist(ts, 1)
     rect.set_max_pulses(10)
     message_length = 5000
     oversampling_factor = 8
-    ak = comms_utils.ak.AK(n=message_length, levels=4)
+    ak = comms_utils.ak.AK(n=message_length, levels=2)
         
     comb = comms_utils.comb.Comb(ak, ts, oversampling_factor)
     signal = comb.pulse_shape(rect, plot_pre_sum=False)
