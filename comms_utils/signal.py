@@ -50,3 +50,6 @@ class Signal():
             raise KeyError("Key must be either int or float")
         i = self.time.index(min(self.time, key=lambda x:abs(x-key)))
         return self.data[i]
+
+    def __len__(self) -> int:
+        return abs(self.length)

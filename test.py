@@ -9,17 +9,18 @@ if __name__ == "__main__":
     print(ts)
     rect = comms_utils.pulse.Niquist(ts, 1)
     rect.set_max_pulses(10)
-    message_length = 10
+    message_length = 5000
     oversampling_factor = 8
-    ak = comms_utils.ak.AK(n=10000, levels=4)
-    comb = comms_utils.comb.Comb(ak, ts/2, oversampling_factor)
-    # comb.plot()
+    ak = comms_utils.ak.AK(n=message_length, levels=4)
+        
+    comb = comms_utils.comb.Comb(ak, ts, oversampling_factor)
     signal = comb.pulse_shape(rect, plot_pre_sum=False)
+    signal.add_noise(10)
+    # signal.plot()
+    comms_utils.plot.eye_diagram(signal, rect, comb.get_clock_comb())
     # signal.add_noise(2)
     # signal.plot()
     sig_data, sig_time = signal.get_data()
-    # signal.plot(
-    # y, x = signal.get_data()
     # comms_utils.plot.eye_diagram(ak, rect, oversampling_factor, snr_db=10)
     ak.oversample(oversampling_factor)
     # x = list(np.arange(0, ts*(message_length), ts*message_length/len(convolved_ak)))

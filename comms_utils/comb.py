@@ -46,8 +46,6 @@ class Comb():
         # pulse_samples = int(self.samples * (pulse.get_period() / self.ts))
         output = np.array([0 for _ in range(self.length*2)], dtype=float)
         pulse = np.array([pulse[t-pulse.get_peak_delay()*self.time[-1]] for t in self.time], dtype=float)
-        plt.plot(self.time, pulse)
-        plt.show()
         
         output_time = [float(val) for val in np.arange(0-self.time[-1]/2, self.time[-1]+self.time[-1]/2, self.ts/self.samples)]
         if len(output_time) < len(output):
