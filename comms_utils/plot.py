@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from comms_utils.ak import AK
 from comms_utils.pulse import Pulse
 from comms_utils.signal import Signal
+from comms_utils.comb import Comb
+import comms_utils.decode as decode
 
 def eye_diagram(signal: Signal, pulse: Pulse, clock_comb: List[float], num_periods:
         int=3):
@@ -23,3 +25,26 @@ def eye_diagram(signal: Signal, pulse: Pulse, clock_comb: List[float], num_perio
             last_clock = i
             count = 0
     plt.show()
+
+def bit_errors(signal: Signal, comb: Comb, db_array: List[float]):
+    ak = comb.get_ak()
+    original_bin = decode.decode_pam(ak.get_data(), ak.get_levels())
+    original_bin = np.array(list(original_bin), dtype=int)
+    if signal.get_snr_db() != None:
+        signal.remove_noise()
+        print("Removed noise for signal")
+    clock_comb = signal.get_pulse().apply_conv_delay(len(signal), comb.get_clock_comb())
+    y = list()
+    for db in db_array:
+        signal.add_noise(db)
+        decoded_data = decode.decode_pam(signal*clock_comb, ak.get_levels())
+        bit_array = np.array(list(decoded_data), dtype=int)
+        bit_errors = np.sum(bit_array != original_bin)
+        y.append(bit_errors)
+        signal.remove_noise()
+    plt.plot(db_array, y)
+    plt.show()
+    
+
+
+

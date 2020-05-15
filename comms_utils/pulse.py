@@ -1,5 +1,6 @@
 import numpy as np
 import sympy as sp
+import matplotlib.pyplot as plt
 from typing import List
 
 class Pulse():
@@ -30,6 +31,12 @@ class Pulse():
 
     def get_peak_delay(self) -> float:
         return self.peak_delay
+
+    def plot(self, num_periods: int, samples: int=50):
+        time = self.get_pulse_times(samples, num_periods)
+        data = self.get_num_pulses(samples, num_periods)
+        plt.plot(time, data)
+        plt.show()
 
     def get_max_pulses(self) -> int:
         return self.max_pulses
@@ -107,6 +114,31 @@ class Niquist(Pulse):
         self.peak_delay = 1/2
         # self.bitrate = bitrate
         # self.w = bitrate / 2
+
+    def time_domain(self, t: float) -> float:
+        if self.max_pulses != -1:
+            if abs(t/self.period) >= self.max_pulses/2:
+                return 0
+        f0 = 1/self.period
+        f_delta = self.alpha * f0
+        pulse = 2 * f0 * (np.sin(2*np.pi*f0*t) / (2*np.pi*f0*t)) * (np.cos(2*np.pi*f_delta*t) / (1-(4*f_delta*t)**2))
+        return pulse
+
+    def freq_domain(self, f: float) -> float:
+        pass
+
+    def get_num_pulses(self, samples: int, num_periods: int) -> List[float]:
+        return [self[float(val)] for val in np.arange(-(self.get_period()/2)*num_periods, (self.get_period()/2)*num_periods, self.get_period()/(samples))]
+
+    def get_pulse_times(self, samples: int, num_periods: int) -> List[float]:
+        return [float(val) for val in np.arange(-(self.get_period()/2)*num_periods, (self.get_period()/2)*num_periods, self.get_period()/(samples))]
+
+
+class RRCos(Pulse):
+    def __init__(self, period: float, alpha: float):
+        super().__init__(period)
+        self.alpha = alpha
+        self.peak_delay = 1/2
 
     def time_domain(self, t: float) -> float:
         if self.max_pulses != -1:

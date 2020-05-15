@@ -4,8 +4,11 @@ from typing import List, Tuple
 from comms_utils.pulse import Pulse
 
 class Signal():
-    def __init__(self, data: List[float], time: List[float], levels: int=4):
+    def __init__(self, data: List[float], time: List[float], levels: int=4, pulse: Pulse=None):
         self.data = data
+        self.original_data = data
+        self.pulse = pulse
+        self.levels = levels
         self.time = time
         self.noise_db = None
         self.length = len(data)
@@ -21,6 +24,12 @@ class Signal():
         self.data = data_noise
         self.noise_db = snr_db
 
+    def get_pulse(self) -> Pulse:
+        return self.pulse
+    
+    def remove_noise(self):
+        self.data = self.original_data
+
     def get_snr_db(self) -> float:
         return self.noise_db
 
@@ -34,6 +43,39 @@ class Signal():
         x = list(range(len(self.data)))
         plot = plt.plot(self.time, self.data)
         plt.show()
+
+    def convolve(self, pulse: Pulse, plot_pre_sum: bool=False):
+        self.pulse = pulse
+        output = np.array([0 for _ in range(self.length*2)], dtype=float)
+        pulse = np.array([pulse[float(t-pulse.get_peak_delay()*self.time[-1])] for t in self.time], dtype=float)
+        samples = len(self.data)
+        ts = (self.time[-1] - self.time[0]) / samples
+        
+        output_time = [float(val) for val in np.arange(0-self.time[-1], self.time[-1]+self.time[-1], ts/samples)]
+        if len(output_time) < len(output):
+            for _ in range(len(output) - len(output_time)):
+                output_time.append(output_time[-1]+ts/samples)
+        if len(output_time) > len(output):
+            output_time = output_time[:len(output)-len(output_time)]
+
+        output_time = np.array(output_time, dtype=float)
+
+        pulse = np.concatenate((pulse, np.zeros(self.length))) 
+        data_point_index = 0
+        for data_point in self.data:
+            temp_pulse = pulse * data_point
+            temp_pulse = np.concatenate((np.zeros(data_point_index), temp_pulse))
+            if data_point_index != 0:
+                temp_pulse = temp_pulse[:-data_point_index]
+            output += temp_pulse
+            if plot_pre_sum == True:
+                plt.plot(output_time, temp_pulse, '-r')
+            data_point_index += 1
+
+        if plot_pre_sum == True:
+            plt.show()
+        
+        return Signal(output, output_time, self.levels, pulse=self.pulse)
 
     def __mul__(self, other) -> List[float]:
         if type(other) != list:

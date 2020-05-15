@@ -1,6 +1,7 @@
 import sympy as sy
 import numpy as np
 import matplotlib.pyplot as plt
+from comms_utils.encode import bin_to_pam
 from typing import List, Optional, Callable
 from time import time
 from comms_utils.pulse import Pulse
