@@ -27,6 +27,9 @@ class Pulse():
             output.insert(0,0.0)
         for _ in range(int(int(conv_len/2)*(1-self.get_peak_delay()))):
             output.append(0.0)
+
+        if conv_len > len(output):
+            output.append(0)
         return output
 
     def get_peak_delay(self) -> float:
@@ -121,7 +124,7 @@ class Niquist(Pulse):
                 return 0
         f0 = 1/self.period
         f_delta = self.alpha * f0
-        pulse = 2 * f0 * (np.sin(2*np.pi*f0*t) / (2*np.pi*f0*t)) * (np.cos(2*np.pi*f_delta*t) / (1-(4*f_delta*t)**2))
+        pulse = (np.sin(2*np.pi*f0*t) / (2*np.pi*f0*t)) * (np.cos(2*np.pi*f_delta*t) / (1-(4*f_delta*t)**2))
         return pulse
 
     def freq_domain(self, f: float) -> float:

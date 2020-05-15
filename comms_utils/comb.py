@@ -51,18 +51,17 @@ class Comb():
 
     def pulse_shape(self, pulse: Pulse, plot_pre_sum: bool=False):
         self.pulse = pulse
-        output = np.array([0 for _ in range(self.length*2)], dtype=float)
-        pulse = np.array([pulse[t-pulse.get_peak_delay()*self.time[-1]] for t in self.time], dtype=float)
+        output = np.zeros(self.length*2)
+        pulse = np.array([pulse[t-pulse.get_peak_delay()*self.time[-1]] for t in self.time], dtype=np.float32)
         
-        output_time = [float(val) for val in np.arange(0-self.time[-1], self.time[-1]+self.time[-1], self.ts/self.samples)]
+        output_time = [float(val) for val in np.arange(0, self.time[-1]+self.time[-1], self.ts/self.samples)]
         if len(output_time) < len(output):
             for _ in range(len(output) - len(output_time)):
                 output_time.append(output_time[-1]+self.ts/self.samples)
         if len(output_time) > len(output):
             output_time = output_time[:len(output)-len(output_time)]
 
-        output_time = np.array(output_time, dtype=float)
-
+        output_time = np.array(output_time, dtype=np.float32)
         pulse = np.concatenate((pulse, np.zeros(self.length))) 
         data_point_index = 0
         for data_point in self.data:

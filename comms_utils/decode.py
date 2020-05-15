@@ -10,7 +10,7 @@ def decode_pam(incoming_data: List[float], levels: int):
     level_options = [i-(levels-1-i) for i in range(0, levels)]
     levels = int(np.log2(levels))
     bit_str = ""
-    for level_val in sampled_data[::-1]:
+    for level_val in sampled_data:
         level_val = min(level_options, key=lambda x:abs(x-level_val))
         level_val = level_val + max_val
         level_val = int(level_val / 2)

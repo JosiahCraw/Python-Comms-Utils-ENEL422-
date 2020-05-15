@@ -4,7 +4,7 @@ from typing import List, Tuple
 from comms_utils.pulse import Pulse
 
 class Signal():
-    def __init__(self, data: List[float], time: List[float], levels: int=4, pulse: Pulse=None):
+    def __init__(self, data: np.ndarray, time: np.ndarray, levels: int=4, pulse: Pulse=None):
         self.data = data
         self.original_data = data
         self.pulse = pulse
@@ -44,38 +44,54 @@ class Signal():
         plot = plt.plot(self.time, self.data)
         plt.show()
 
-    def convolve(self, pulse: Pulse, plot_pre_sum: bool=False):
+    def convolve(self, pulse: Pulse):
         self.pulse = pulse
-        output = np.array([0 for _ in range(self.length*2)], dtype=float)
-        pulse = np.array([pulse[float(t-pulse.get_peak_delay()*self.time[-1])] for t in self.time], dtype=float)
-        samples = len(self.data)
-        ts = (self.time[-1] - self.time[0]) / samples
+        pulse_data = np.array([pulse[float(t-pulse.get_peak_delay()*self.time[-1])] for t in self.time], dtype=np.float32)
+        convoled = np.convolve(pulse_data, self.data)
         
-        output_time = [float(val) for val in np.arange(0-self.time[-1], self.time[-1]+self.time[-1], ts/samples)]
-        if len(output_time) < len(output):
-            for _ in range(len(output) - len(output_time)):
-                output_time.append(output_time[-1]+ts/samples)
-        if len(output_time) > len(output):
-            output_time = output_time[:len(output)-len(output_time)]
+        period = (self.time[-1]-self.time[0]) / len(self.time)
+        conv_time = np.arange(self.time[0], (self.time[-1]-self.time[0])*2, period)
 
-        output_time = np.array(output_time, dtype=float)
+        if len(conv_time) < len(convoled):
+            for _ in range(len(convoled) - len(conv_time)):
+                conv_time.append(conv_time[-1]+period)
+        if len(conv_time) > len(convoled):
+            conv_time = conv_time[:len(convoled)-len(conv_time)]  
 
-        pulse = np.concatenate((pulse, np.zeros(self.length))) 
-        data_point_index = 0
-        for data_point in self.data:
-            temp_pulse = pulse * data_point
-            temp_pulse = np.concatenate((np.zeros(data_point_index), temp_pulse))
-            if data_point_index != 0:
-                temp_pulse = temp_pulse[:-data_point_index]
-            output += temp_pulse
-            if plot_pre_sum == True:
-                plt.plot(output_time, temp_pulse, '-r')
-            data_point_index += 1
-
-        if plot_pre_sum == True:
-            plt.show()
+        print(max(convoled))
+        convoled = convoled / (max(convoled)/(self.levels-1))
+        # output = np.zeros(self.length*2)
+        # print(output)
+        # pulse = np.array([pulse[float(t-pulse.get_peak_delay()*self.time[-1])] for t in self.time], dtype=float)
+        # samples = len(self.data)
+        # ts = (self.time[-1] - self.time[0]) / samples
         
-        return Signal(output, output_time, self.levels, pulse=self.pulse)
+        # output_time = [float(val) for val in np.arange(0, self.time[-1]+2*self.time[-1], ts/samples)]
+        # if len(output_time) < len(output):
+        #     for _ in range(len(output) - len(output_time)):
+        #         output_time.append(output_time[-1]+ts/samples)
+        # if len(output_time) > len(output):
+        #     output_time = output_time[:len(output)-len(output_time)]
+
+        # output_time = np.array(output_time, dtype=float)
+
+        # pulse = np.concatenate((pulse, np.zeros(self.length))) 
+        # data_point_index = 0
+        # for data_point in self.data:
+        #     temp_pulse = pulse * data_point
+        #     temp_pulse = np.concatenate((np.zeros(data_point_index), temp_pulse))
+        #     if data_point_index != 0:
+        #         temp_pulse = temp_pulse[:-data_point_index]
+        #     output += temp_pulse
+        #     if plot_pre_sum == True:
+        #         plt.plot(output_time, temp_pulse, '-r')
+        #     data_point_index += 1
+
+        # if plot_pre_sum == True:
+        #     plt.show()
+
+        
+        return Signal(convoled, conv_time, self.levels, pulse=self.pulse)
 
     def __mul__(self, other) -> List[float]:
         if type(other) != list:
