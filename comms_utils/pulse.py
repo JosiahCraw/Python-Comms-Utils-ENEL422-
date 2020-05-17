@@ -110,7 +110,7 @@ class Sin(Pulse):
         return np.sin((t)*np.pi/self.period)
 
 
-class Niquist(Pulse):
+class RCos(Pulse):
     def __init__(self, period: float, alpha: float):
         super().__init__(period)
         self.alpha = alpha
@@ -122,10 +122,10 @@ class Niquist(Pulse):
         if self.max_pulses != -1:
             if abs(t/self.period) >= self.max_pulses/2:
                 return 0
-        f0 = 1/self.period
-        f_delta = self.alpha * f0
-        pulse = (np.sin(2*np.pi*f0*t) / (2*np.pi*f0*t)) * (np.cos(2*np.pi*f_delta*t) / (1-(4*f_delta*t)**2))
-        return pulse
+        if abs(t) == (self.period/(2*self.alpha)):
+            return (np.pi/(4*self.period))*np.sinc(1/(2*self.alpha))
+        return (1/self.period)*np.sinc(t/self.period)*((np.cos((np.pi*self.alpha*t)/self.period))/(1-((2*self.alpha*t)/self.period)**2))
+        
 
     def freq_domain(self, f: float) -> float:
         pass
@@ -147,13 +147,19 @@ class RRCos(Pulse):
         if self.max_pulses != -1:
             if abs(t/self.period) >= self.max_pulses/2:
                 return 0
-        f0 = 1/self.period
-        f_delta = self.alpha * f0
-        pulse = 2 * f0 * (np.sin(2*np.pi*f0*t) / (2*np.pi*f0*t)) * (np.cos(2*np.pi*f_delta*t) / (1-(4*f_delta*t)**2))
-        return pulse
+        numerator = np.cos((1+self.alpha)*np.pi*t/self.period) + (np.sin((1-self.alpha)*np.pi*t/self.period))/(4*self.alpha*t/self.period)
+        return (2*self.alpha/(np.pi*np.sqrt(self.period)))*(numerator/(1-(4*self.alpha * t / self.period)**2))
 
     def freq_domain(self, f: float) -> float:
-        pass
+        if abs(f) > (1+self.alpha)/(2*self.period):
+            return 0
+        elif 0 <= abs(f) <= (1-self.alpha)/(2*self.period):
+            return np.sqrt(self.period)
+        elif (1-self.alpha)/(2*self.period) <= abs(f) <= (1+self.alpha)/(2*self.period):
+            return np.sqrt((self.period/2)*(1+np.cos((np.pi*self.period)/self.alpha*(abs(f)-((1-self.alpha)/(2*self.period))))))
+
+        else:
+            return None
 
     def get_num_pulses(self, samples: int, num_periods: int) -> List[float]:
         return [self[float(val)] for val in np.arange(-(self.get_period()/2)*num_periods, (self.get_period()/2)*num_periods, self.get_period()/(samples))]

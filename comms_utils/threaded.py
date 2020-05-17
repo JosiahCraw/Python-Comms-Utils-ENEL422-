@@ -1,6 +1,10 @@
 import os
+import copy
 import threading
 from typing import List
+import comms_utils.decode as decode
+from comms_utils.signal import Signal 
+from comms_utils.ak import AK 
 import comms_utils.psd as psd
 import numpy as np
 
@@ -32,3 +36,41 @@ def sy(sy, x: List[float]) -> List[float]:
     for item in rc:
         output.extend(item)
     return output
+
+def calc_errors(y: List[float], ak: AK, i: int, original_bin: np.ndarray,
+        clock_comb: List[float], signal: Signal, db: float, rc_lock):
+        
+    signal.add_noise(db)
+    decoded_data = decode.decode_pam(signal*clock_comb, ak.get_levels())
+    bit_array = np.array(list(decoded_data), dtype=int)
+    bit_errors = np.sum(bit_array != original_bin)
+    bit_error_rate = bit_errors / len(ak)
+    with rc_lock:
+        y[i] = bit_error_rate
+    signal.remove_noise()
+
+def calc_errors_threaded(db_array: List[float], y: List[float], ak: AK,
+        original_bin: np.ndarray, clock_comb: List[float],
+        signal: Signal) -> List[float]:
+    
+    y = [0] * len(db_array)
+    num_threads = os.cpu_count()
+    threads = list()
+    rc_lock = threading.Lock()
+    thread_id = 0
+    i = 0
+    while i < len(db_array):
+        for _ in range(num_threads):
+            if i == len(db_array)-1:
+                continue
+            thread = threading.Thread(None, calc_errors, args=[y, ak, i,
+                original_bin, clock_comb, copy.deepcopy(signal), db_array[i], rc_lock])
+            threads.append(thread)
+            thread_id += 1
+            i += 1
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        threads = list()
+    return y

@@ -33,6 +33,9 @@ class Comb():
     def get_clock_comb(self) -> List[int]:
         return self.clock_comb
 
+    def delay_clock_comb(self, pulse: Pulse, conv_len: int):
+        self.clock_comb = pulse.apply_conv_delay(conv_len, self.clock_comb)
+
     def plot(self):
         plt.plot(self.time, self.data, '-b')
         plt.show()

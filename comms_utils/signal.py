@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 from typing import List, Tuple
 from comms_utils.pulse import Pulse
 
@@ -12,17 +13,22 @@ class Signal():
         self.time = time
         self.noise_db = None
         self.length = len(data)
-        self.noise = [(num*2)-1 for num in np.random.random_sample((1, self.length))[0]]
         self.max_signal = ((levels/2)+1)
         self.min_signal = -((levels/2)+1)
 
     def add_noise(self, snr_db: float):
-        noise_power = self.max_signal / (10**(snr_db/10))
-        data_noise = list()
-        for i in range(len(self.data)):
-            data_noise.append(self.data[i]+noise_power*self.noise[i])
-        self.data = data_noise
+        signal = np.array(self.data)
+        signal_power = signal ** 2
+        avg_sig_power =  np.mean(signal_power)
+        avg_sig_db = 10 * np.log10(avg_sig_power)
+        noise_db = avg_sig_db - snr_db
+        avg_noise_power = 10 ** (noise_db/10)
+        data_noise = np.array(self.data) + np.random.normal(0, np.sqrt(avg_noise_power), len(self.data))
+        self.data = data_noise.tolist()
         self.noise_db = snr_db
+
+    def get_levels(self) -> int:
+        return self.levels
 
     def get_pulse(self) -> Pulse:
         return self.pulse
@@ -33,15 +39,39 @@ class Signal():
     def get_snr_db(self) -> float:
         return self.noise_db
 
-    def regen_noise(self):
-        self.noise = [(num*2)-1 for num in np.random.random_sample((1, self.length[0]))[0]]
-
     def get_data(self):
         return self.data, self.time
 
-    def plot(self):
+    def plot(self, title: str=None):
         x = list(range(len(self.data)))
         plot = plt.plot(self.time, self.data)
+        if(title == None):
+            plt.title("Signal")
+        else:
+            plt.title(title)
+            
+        plt.xlabel("Time (s)")
+        plt.ylabel("Amplitude")
+        plt.show()
+    
+    def plot_psd(self, title: str=None):
+        dt = (self.time[-1] - self.time[0]) / len(self.time)
+        fig = plt.figure(constrained_layout=True)
+        gs = gridspec.GridSpec(2, 1, figure=fig)
+        ax = fig.add_subplot(gs[0, :])
+        ax.plot(self.time, self.data, '-b')
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Amplitude")
+        
+        if(title == None):
+            plt.title("Signal")
+        else:
+            plt.title(title)
+
+        ax2 = fig.add_subplot(gs[1, :])
+        ax2.psd(self.data, 512, 1 / dt)
+        ax2.set_xlabel("Frequency (f)")
+        ax2.set_ylabel("Power Spectral Density (dB/Hz)")
         plt.show()
 
     def convolve(self, pulse: Pulse):
@@ -57,39 +87,6 @@ class Signal():
                 conv_time.append(conv_time[-1]+period)
         if len(conv_time) > len(convoled):
             conv_time = conv_time[:len(convoled)-len(conv_time)]  
-
-        print(max(convoled))
-        convoled = convoled / (max(convoled)/(self.levels-1))
-        # output = np.zeros(self.length*2)
-        # print(output)
-        # pulse = np.array([pulse[float(t-pulse.get_peak_delay()*self.time[-1])] for t in self.time], dtype=float)
-        # samples = len(self.data)
-        # ts = (self.time[-1] - self.time[0]) / samples
-        
-        # output_time = [float(val) for val in np.arange(0, self.time[-1]+2*self.time[-1], ts/samples)]
-        # if len(output_time) < len(output):
-        #     for _ in range(len(output) - len(output_time)):
-        #         output_time.append(output_time[-1]+ts/samples)
-        # if len(output_time) > len(output):
-        #     output_time = output_time[:len(output)-len(output_time)]
-
-        # output_time = np.array(output_time, dtype=float)
-
-        # pulse = np.concatenate((pulse, np.zeros(self.length))) 
-        # data_point_index = 0
-        # for data_point in self.data:
-        #     temp_pulse = pulse * data_point
-        #     temp_pulse = np.concatenate((np.zeros(data_point_index), temp_pulse))
-        #     if data_point_index != 0:
-        #         temp_pulse = temp_pulse[:-data_point_index]
-        #     output += temp_pulse
-        #     if plot_pre_sum == True:
-        #         plt.plot(output_time, temp_pulse, '-r')
-        #     data_point_index += 1
-
-        # if plot_pre_sum == True:
-        #     plt.show()
-
         
         return Signal(convoled, conv_time, self.levels, pulse=self.pulse)
 
@@ -98,10 +95,11 @@ class Signal():
             raise TypeError("Must multiply by a list")
         if len(other) != len(self.data):
             raise IndexError("Lists must be the same length")
-        output = list()
-        for i in range(len(self.data)):
-            output.append(self.data[i]*other[i])
-        return output
+        other_arr = np.array(other, dtype=np.float32)
+        data_arr = np.array(self.data, dtype=np.float32)
+        result = other_arr * data_arr
+        
+        return result.tolist()
 
     def __getitem__(self, key) -> float:
         if type(key) != int and type(key) != float:

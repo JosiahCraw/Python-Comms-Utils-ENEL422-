@@ -3,28 +3,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
-    bandwidth = 1
+    bandwidth = 500000
     tb = 1/bandwidth
     ts = tb*2
-    rect = comms_utils.pulse.Niquist(ts, 1)
-    rect.set_max_pulses(1)
+    rect = comms_utils.pulse.RRCos(ts, 0.5)
+    # rect.set_max_pulses(200)
     message = '0010110111'
     levels = 4
     message_data = comms_utils.encode.bin_to_pam(message, levels)
-    message_length = 10000
+    message_length = 1000
     oversampling_factor = 8
     ak = comms_utils.ak.AK(n=message_length, levels=levels)
         
-    comb = comms_utils.comb.Comb(ak, ts/2, oversampling_factor)
+    comb = comms_utils.comb.Comb(ak, ts, oversampling_factor)
     signal = comb.pulse_shape(rect, plot_pre_sum=False)
-    signal.add_noise(2)
+    signal.add_noise(10)
     # signal.plot()
     matched = signal.convolve(rect)
     # matched.plot()
     
-    comms_utils.plot.eye_diagram(matched, rect, comb.get_clock_comb(), num_periods=2)
+    delayed_comb = rect.apply_conv_delay(len(signal), comb.get_clock_comb())
+    comms_utils.plot.eye_diagram(matched, rect, delayed_comb, num_periods=3, plot_sample_lines=True)
     db_options = [val for val in np.arange(0, 20, 0.1)]
-    # comms_utils.plot.bit_errors(signal, comb, db_options)
+    comms_utils.plot.bit_errors(signal, comb, db_options)
     # signal.add_noise(2)
     # signal.plot()
     sig_data, sig_time = matched.get_data()
