@@ -12,23 +12,27 @@ class Signal():
         self.levels = levels
         self.time = time
         self.noise_db = None
+        self.noise = np.random.normal(0, 1, len(data))
         self.length = len(data)
         self.max_signal = ((levels/2)+1)
         self.min_signal = -((levels/2)+1)
 
-    def add_noise(self, snr_db: float):
-        signal = np.array(self.data)
-        signal_power = signal ** 2
-        avg_sig_power =  np.mean(signal_power)
-        avg_sig_db = 10 * np.log10(avg_sig_power)
-        noise_db = avg_sig_db - snr_db
-        avg_noise_power = 10 ** (noise_db/10)
-        data_noise = np.array(self.data) + np.random.normal(0, np.sqrt(avg_noise_power), len(self.data))
-        self.data = data_noise.tolist()
-        self.noise_db = snr_db
+    def add_noise(self, eb2n: float):
+        eb2n = 10 ** (eb2n/10)
+        var = 1/(2*eb2n)
+        noise = np.sqrt(var)
+        awgn = noise * self.noise
+        
+        data_noise = np.array(self.data) + awgn
+        self.data = data_noise
+        
+        self.noise_db = eb2n
 
     def get_levels(self) -> int:
         return self.levels
+
+    def regen_noise(self):
+        self.noise = self.noise = np.random.normal(0, 1, len(self.data))
 
     def get_pulse(self) -> Pulse:
         return self.pulse
@@ -42,7 +46,7 @@ class Signal():
     def get_data(self):
         return self.data, self.time
 
-    def plot(self, title: str=None):
+    def plot(self, title: str=None, pgf_plot: str=None):
         x = list(range(len(self.data)))
         plot = plt.plot(self.time, self.data)
         if(title == None):
@@ -52,9 +56,12 @@ class Signal():
             
         plt.xlabel("Time (s)")
         plt.ylabel("Amplitude")
-        plt.show()
+        if pgf_plot == None:
+            plt.show()
+        else:
+            plt.savefig(pgf_plot)
     
-    def plot_psd(self, title: str=None):
+    def plot_psd(self, title: str=None, pgf_plot: str=None):
         dt = (self.time[-1] - self.time[0]) / len(self.time)
         fig = plt.figure(constrained_layout=True)
         gs = gridspec.GridSpec(2, 1, figure=fig)
@@ -72,7 +79,11 @@ class Signal():
         ax2.psd(self.data, 512, 1 / dt)
         ax2.set_xlabel("Frequency (f)")
         ax2.set_ylabel("Power Spectral Density (dB/Hz)")
-        plt.show()
+
+        if pgf_plot == None:
+            plt.show()
+        else:
+            plt.savefig(pgf_plot)
 
     def convolve(self, pulse: Pulse):
         self.pulse = pulse

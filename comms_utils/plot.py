@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import special
 from typing import List
 import matplotlib.pyplot as plt
 from comms_utils.ak import AK
@@ -42,9 +43,12 @@ def eye_diagram(signal: Signal, pulse: Pulse, clock_comb: List[float], num_perio
 
 
 def calc_errors(y: List[float], ak: AK, original_bin: np.ndarray,
-        clock_comb: List[float], signal: Signal, db: float):
+        comb: Comb, signal: Signal, pulse: Pulse, db: float):
     signal.add_noise(db)
-    decoded_data = decode.decode_pam(signal*clock_comb, ak.get_levels())
+    recv_sig = signal.convolve(pulse)
+    delayed_clock = pulse.apply_conv_delay(len(recv_sig), comb.get_clock_comb())
+
+    decoded_data = decode.decode_pam(recv_sig*delayed_clock, ak.get_levels())
     bit_array = np.array(list(decoded_data), dtype=int)
     bit_errors = np.sum(bit_array != original_bin)
     bit_error_rate = bit_errors / len(ak)
@@ -52,26 +56,49 @@ def calc_errors(y: List[float], ak: AK, original_bin: np.ndarray,
     signal.remove_noise()
 
 
-def bit_errors(signal: Signal, comb: Comb, db_array: List[float], title: str=None, pgf_plot: str=None, threading: bool=False):
+def analytical_bit_error(db_array: List[float], ak: AK, title: str=None):
+    numerical = list()
+    for db in db_array:
+        db_num = 10 ** (db/10)
+        numerical.append(0.5*special.erfc(np.sqrt(db_num)))
+    plt.plot(db_array, numerical, '-b')
+    plt.yscale("log")
+    plt.grid(True, which='both')
+    plt.xlabel("$E_b/N_0$ (dB)")
+    plt.ylabel("BER")
+    if title == None:
+        plt.title("{}-PAM Bit Error Rate".format(ak.get_levels()))
+    else:
+        plt.title(title)
+    plt.show()
+
+
+def bit_errors(signal: Signal, comb: Comb, pulse: Pulse, db_array: List[float], title: str=None, 
+        numerical_line: bool=False, pgf_plot: str=None, threading: bool=False):
     ak = comb.get_ak()
     original_bin = decode.decode_pam(ak.get_data(), ak.get_levels())
     original_bin = np.array(list(original_bin), dtype=int)
     if signal.get_snr_db() != None:
         signal.remove_noise()
         print("Removed initial noise from signal")
-    clock_comb = comb.get_clock_comb()
     y = list()
+    numerical = list()
     if threading == True:
         threaded.calc_errors_threaded(db_array.copy(), y, ak, original_bin,
-            clock_comb, signal)
+            comb, signal)
     else:
         for db in db_array:
-            calc_errors(y, ak, original_bin, clock_comb, signal, db)
-    plt.plot(db_array, y)
+            if numerical_line == True:
+                db_num = 10 ** (db/10)
+                numerical.append(0.5*special.erfc(np.sqrt(db_num)))
+            calc_errors(y, ak, original_bin, comb, signal, pulse, db)
+    plt.plot(db_array, y, 'o-b')
+    if numerical_line == True:
+        plt.plot(db_array, numerical, '--r')
     plt.yscale("log")
     plt.grid(True, which='both')
     plt.xlabel("$E_b/N_0$ (dB)")
-    plt.ylabel("SER")
+    plt.ylabel("BER")
     
     if title != None:
         plt.title(title)

@@ -5,9 +5,9 @@ with open("README.md", 'r') as file_handler:
 
 setuptools.setup(
     name="comms-utils",
-    version="0.0.1",
+    version="0.0.2",
     author="Jos Craw",
-    author_email="Jos Craw",
+    author_email="jos@joscraw.net",
     description="A set of tools for the ENEL422 Comms Assignment",
     long_description=long_description,
     long_description_content_type="text/markdown",
